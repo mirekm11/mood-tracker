@@ -46,7 +46,12 @@ export default function HomeScreen({ navigation }) {
           keyExtractor={(item, index) => index.toString()}
           renderItem={({ item }) => (
             <View style={styles.moodItem}>
-              <Text style={styles.moodText}>{item}</Text>
+              <Text
+                style={styles.moodText}
+                onPress={() => navigation.navigate('Mood Details', { mood: item })}
+              >
+                {item}
+              </Text>
             </View>
           )}
         />
