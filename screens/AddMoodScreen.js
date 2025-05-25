@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
   Keyboard,
+  Alert,
 } from "react-native";
 import { MoodContext } from "../context/MoodContext";
 
@@ -18,6 +19,9 @@ export default function AddMoodScreen({ navigation }) {
   const handleAddMood = async () => {
     if (newMood.trim().length > 0) {
       await addMood(newMood);
+
+      Alert.alert("Nastrój zapisany", `Dodano nastrój: ${newMood}`);
+
       Keyboard.dismiss();
       navigation.goBack();
     }
