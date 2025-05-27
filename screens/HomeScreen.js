@@ -10,9 +10,18 @@ import {
   Keyboard,
 } from "react-native";
 import { MoodContext } from "../context/MoodContext";
+import * as Speech from "expo-speech";
 
 export default function HomeScreen({ navigation }) {
   const { moodList, deleteMood } = useContext(MoodContext);
+
+  const readComment = (comment) => {
+    if (comment?.trim()) {
+      Speech.speak(comment);
+    } else {
+      Speech.speak("No comment available.");
+    }
+  };
 
   return (
     <KeyboardAvoidingView behavior="height" style={{ flex: 1 }}>
@@ -27,8 +36,8 @@ export default function HomeScreen({ navigation }) {
 
           <FlatList
             data={moodList}
-            keyExtractor={(item, index) => index.toString()}
-            renderItem={({ item, index }) => (
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
               <View style={styles.moodItemWrapper}>
                 <TouchableOpacity
                   style={styles.moodItem}
@@ -36,7 +45,7 @@ export default function HomeScreen({ navigation }) {
                     navigation.navigate("Mood Details", {
                       mood: item.mood,
                       comment: item.comment,
-                      index,
+                      id: item.id,
                     })
                   }
                 >
@@ -55,12 +64,20 @@ export default function HomeScreen({ navigation }) {
                     <Text style={styles.dateText}>📅 {item.date}</Text>
                   ) : null}
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => deleteMood(index)}
-                >
-                  <Text style={styles.deleteButtonText}>X</Text>
-                </TouchableOpacity>
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity
+                    style={styles.speakButton}
+                    onPress={() => readComment(item.comment)}
+                  >
+                    <Text style={styles.speakButtonText}>🔈</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => deleteMood(item.id)}
+                  >
+                    <Text style={styles.deleteButtonText}>🗑️</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
             ListEmptyComponent={
@@ -104,14 +121,30 @@ const styles = StyleSheet.create({
   },
   locationText: { fontSize: 15, color: "#777", marginTop: 4 },
   dateText: { fontSize: 12, color: "#777", marginTop: 4 },
-  deleteButton: {
-    backgroundColor: "#f44336",
+  actionButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: 6,
+  },
+  speakButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: 8,
+    marginRight: 6,
+  },
+  speakButtonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  deleteButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
   },
   deleteButtonText: { color: "white", fontSize: 18, fontWeight: "bold" },
   emptyContainer: {

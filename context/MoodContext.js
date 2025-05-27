@@ -21,17 +21,13 @@ export const MoodProvider = ({ children }) => {
       if (storedMoods) {
         setMoodList(JSON.parse(storedMoods));
       }
-    } catch (error) {
-      console.error("Failed to load moods:", error);
-    }
+    } catch (error) {}
   };
 
   const saveMoods = async () => {
     try {
       await AsyncStorage.setItem("moodList", JSON.stringify(moodList));
-    } catch (error) {
-      console.error("Failed to save moods:", error);
-    }
+    } catch (error) {}
   };
 
   const addMood = async (mood) => {
@@ -55,6 +51,7 @@ export const MoodProvider = ({ children }) => {
       }
 
       const newMood = {
+        id: Date.now(),
         mood,
         comment: "",
         location,
@@ -63,21 +60,17 @@ export const MoodProvider = ({ children }) => {
       };
 
       setMoodList((prev) => [...prev, newMood]);
-    } catch (error) {
-      console.error("Error adding mood:", error);
-    }
+    } catch (error) {}
   };
 
-  const deleteMood = (index) => {
-    setMoodList((prev) => prev.filter((_, i) => i !== index));
+  const deleteMood = (idToDelete) => {
+    setMoodList((prev) => prev.filter((m) => m.id !== idToDelete));
   };
 
-  const addComment = (index, comment) => {
-    setMoodList((prev) => {
-      const updated = [...prev];
-      updated[index].comment = comment;
-      return updated;
-    });
+  const addComment = (id, comment) => {
+    setMoodList((prevMoods) =>
+      prevMoods.map((mood) => (mood.id === id ? { ...mood, comment } : mood))
+    );
   };
 
   return (

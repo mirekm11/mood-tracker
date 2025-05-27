@@ -12,13 +12,13 @@ import {
 import { MoodContext } from "../context/MoodContext";
 
 export default function MoodDetailsScreen({ route, navigation }) {
-  const { mood, index, comment: initialComment } = route.params;
+  const { mood, comment: initialComment, id } = route.params;
   const { addComment } = useContext(MoodContext);
   const [comment, setComment] = useState(initialComment || "");
 
   const handleSave = () => {
     if (comment.trim().length > 0) {
-      addComment(index, comment);
+      addComment(id, comment);
       Keyboard.dismiss();
       navigation.goBack();
     }
@@ -29,7 +29,6 @@ export default function MoodDetailsScreen({ route, navigation }) {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.container}>
           <Text style={styles.title}>{mood}</Text>
-
           <TextInput
             style={styles.input}
             placeholder="Why do you feel this way?"
@@ -37,7 +36,6 @@ export default function MoodDetailsScreen({ route, navigation }) {
             onChangeText={setComment}
             multiline
           />
-
           <TouchableOpacity style={styles.button} onPress={handleSave}>
             <Text style={styles.buttonText}>Save Comment</Text>
           </TouchableOpacity>
