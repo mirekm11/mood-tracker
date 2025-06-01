@@ -32,29 +32,23 @@ export const MoodProvider = ({ children }) => {
 
   const addMood = async (mood) => {
     try {
-      let location = null;
       let locationName = null;
 
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === "granted") {
         const loc = await Location.getCurrentPositionAsync({});
-        location = {
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
-        };
 
         const places = await Location.reverseGeocodeAsync(loc.coords);
         if (places.length > 0) {
           const place = places[0];
-          locationName = `${place.city || place.region || "Unknown"}, ${place.country || ""}`;
+          locationName = `${place.city || "Unknown"}, ${place.country || ""}`;
         }
       }
 
       const newMood = {
-        id: Date.now(),
+        id: Date.now().toString(),
         mood,
         comment: "",
-        location,
         locationName,
         date: new Date().toLocaleString(),
       };

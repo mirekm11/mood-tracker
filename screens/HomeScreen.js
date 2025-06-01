@@ -36,7 +36,7 @@ export default function HomeScreen({ navigation }) {
 
           <FlatList
             data={moodList}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <View style={styles.moodItemWrapper}>
                 <TouchableOpacity
