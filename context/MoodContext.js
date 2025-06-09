@@ -1,74 +1,90 @@
 import React, { createContext, useState, useEffect } from "react";
-import * as Location from "expo-location";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { loadFromStorage, saveToStorage } from "../utils/storage";
+import { createMoodEntry } from "../utils/moodService";
+import { removeMoodById, updateMoodComment } from "../utils/moodListUtils";
 
 export const MoodContext = createContext();
 
 export const MoodProvider = ({ children }) => {
   const [moodList, setMoodList] = useState([]);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const loadMoods = async () => {
+    try {
+      setIsLoading(true);
+      const loaded = await loadFromStorage("moodList");
+      setMoodList(loaded);
+    } catch (error) {
+      console.error("Error loading moods:", error);
+      setMoodList([]);
+    } finally {
+      setIsLoading(false);
+      setIsInitialLoad(false);
+    }
+  };
 
   useEffect(() => {
     loadMoods();
   }, []);
 
   useEffect(() => {
-    saveMoods();
+    if (isInitialLoad) return;
+
+    const timeout = setTimeout(() => {
+      saveToStorage("moodList", moodList);
+    }, 500);
+
+    return () => clearTimeout(timeout);
   }, [moodList]);
 
-  const loadMoods = async () => {
+  const addMood = async (moodText) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
     try {
-      const storedMoods = await AsyncStorage.getItem("moodList");
-      if (storedMoods) {
-        setMoodList(JSON.parse(storedMoods));
+      const newMood = await createMoodEntry(moodText);
+      if (newMood) {
+        setMoodList((prev) => [...prev, newMood]);
       }
-    } catch (error) {}
-  };
-
-  const saveMoods = async () => {
-    try {
-      await AsyncStorage.setItem("moodList", JSON.stringify(moodList));
-    } catch (error) {}
-  };
-
-  const addMood = async (mood) => {
-    try {
-      let locationName = null;
-
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === "granted") {
-        const loc = await Location.getCurrentPositionAsync({});
-
-        const places = await Location.reverseGeocodeAsync(loc.coords);
-        if (places.length > 0) {
-          const place = places[0];
-          locationName = `${place.city || "Unknown"}, ${place.country || ""}`;
-        }
-      }
-
-      const newMood = {
-        id: Date.now().toString(),
-        mood,
-        comment: "",
-        locationName,
-        date: new Date().toLocaleString(),
-      };
-
-      setMoodList((prev) => [...prev, newMood]);
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error adding mood:", error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const deleteMood = (idToDelete) => {
-    setMoodList((prev) => prev.filter((m) => m.id !== idToDelete));
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      setMoodList((prev) => removeMoodById(prev, idToDelete));
+    } catch (error) {
+      console.error("Error deleting mood:", error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const addComment = (id, comment) => {
-    setMoodList((prevMoods) =>
-      prevMoods.map((mood) => (mood.id === id ? { ...mood, comment } : mood))
-    );
+    try {
+      setMoodList((prevMoods) => updateMoodComment(prevMoods, id, comment));
+    } catch (error) {
+      console.error("Error adding comment:", error);
+    }
   };
 
   return (
-    <MoodContext.Provider value={{ moodList, addMood, deleteMood, addComment }}>
+    <MoodContext.Provider
+      value={{
+        moodList,
+        addMood,
+        deleteMood,
+        addComment,
+        isLoading,
+        loadMoods,
+      }}
+    >
       {children}
     </MoodContext.Provider>
   );

@@ -1,91 +1,100 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import {
   View,
-  Text,
   FlatList,
   StyleSheet,
-  TouchableOpacity,
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
   Keyboard,
+  ActivityIndicator,
+  RefreshControl,
+  Alert,
 } from "react-native";
 import { MoodContext } from "../context/MoodContext";
 import * as Speech from "expo-speech";
+import MoodItem from "../components/MoodItem";
+import CustomButton from "../components/CustomButton";
+import EmptyState from "../components/EmptyState";
 
 export default function HomeScreen({ navigation }) {
-  const { moodList, deleteMood } = useContext(MoodContext);
+  const { moodList, deleteMood, isLoading, loadMoods } =
+    useContext(MoodContext);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const readComment = (comment) => {
-    if (comment?.trim()) {
-      Speech.speak(comment);
-    } else {
-      Speech.speak("No comment available.");
+  const handleNavigate = (id, mood, comment) => {
+    if (!id || !mood) return;
+    navigation.navigate("Mood Details", {
+      id,
+      mood,
+      comment: comment ?? "",
+    });
+  };
+
+  const handleSpeak = (comment) => {
+    try {
+      if (comment?.trim()) {
+        Speech.speak(comment);
+      } else {
+        Speech.speak("No comment available.");
+      }
+    } catch (error) {
+      Alert.alert("Speech error: Failed to read the comment");
+      console.error("Speech error:", error);
     }
+  };
+
+  const handleDelete = (id) => {
+    deleteMood(id);
+  };
+
+  const renderMoodItem = ({ item }) => (
+    <MoodItem
+      item={item}
+      onPress={() => handleNavigate(item.id, item.mood, item.comment)}
+      onSpeak={() => handleSpeak(item.comment)}
+      onDelete={() => handleDelete(item.id)}
+    />
+  );
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await loadMoods();
+    setIsRefreshing(false);
   };
 
   return (
     <KeyboardAvoidingView behavior="height" style={{ flex: 1 }}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.container}>
-          <TouchableOpacity
-            style={styles.addButton}
+          <CustomButton
+            title="+ Add Mood"
             onPress={() => navigation.navigate("Add Mood")}
-          >
-            <Text style={styles.addButtonText}>+ Add Mood</Text>
-          </TouchableOpacity>
-
-          <FlatList
-            data={moodList}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.moodItemWrapper}>
-                <TouchableOpacity
-                  style={styles.moodItem}
-                  onPress={() =>
-                    navigation.navigate("Mood Details", {
-                      mood: item.mood,
-                      comment: item.comment,
-                      id: item.id,
-                    })
-                  }
-                >
-                  <Text style={styles.moodText}>{item.mood}</Text>
-                  {item.comment ? (
-                    <Text style={styles.commentText}>💬 {item.comment}</Text>
-                  ) : (
-                    <Text style={styles.noCommentText}>✏️ Add comment</Text>
-                  )}
-                  {item.locationName ? (
-                    <Text style={styles.locationText}>
-                      📍 {item.locationName}
-                    </Text>
-                  ) : null}
-                  {item.date ? (
-                    <Text style={styles.dateText}>📅 {item.date}</Text>
-                  ) : null}
-                </TouchableOpacity>
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity
-                    style={styles.speakButton}
-                    onPress={() => readComment(item.comment)}
-                  >
-                    <Text style={styles.speakButtonText}>🔈</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => deleteMood(item.id)}
-                  >
-                    <Text style={styles.deleteButtonText}>🗑️</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No moods yet. Add some!</Text>
-              </View>
-            }
           />
+
+          {isLoading ? (
+            <ActivityIndicator
+              size="large"
+              color="#4CAF50"
+              style={{ marginTop: 20 }}
+            />
+          ) : (
+            <FlatList
+              data={moodList}
+              keyExtractor={(item) => item.id}
+              renderItem={renderMoodItem}
+              ListEmptyComponent={
+                <EmptyState message="No moods yet. Add some!" />
+              }
+              contentContainerStyle={{ flexGrow: 1 }}
+              refreshControl={
+                <RefreshControl
+                  refreshing={isRefreshing}
+                  onRefresh={handleRefresh}
+                  colors={["#4CAF50"]}
+                />
+              }
+            />
+          )}
         </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
@@ -93,65 +102,11 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: "#f2f2f2" },
-  addButton: {
-    backgroundColor: "#4CAF50",
-    padding: 15,
-    borderRadius: 12,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  addButtonText: { color: "white", fontSize: 18, fontWeight: "bold" },
-  moodItemWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#d1e7dd",
-    borderRadius: 10,
-    marginBottom: 12,
-    paddingRight: 10,
-  },
-  moodItem: { flex: 1, padding: 16 },
-  moodText: { fontSize: 18, color: "#333", fontWeight: "bold" },
-  commentText: { fontSize: 14, color: "#555", marginTop: 4 },
-  noCommentText: {
-    fontSize: 14,
-    color: "#999",
-    marginTop: 4,
-    fontStyle: "italic",
-  },
-  locationText: { fontSize: 15, color: "#777", marginTop: 4 },
-  dateText: { fontSize: 12, color: "#777", marginTop: 4 },
-  actionButtons: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginLeft: 6,
-  },
-  speakButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 6,
-  },
-  speakButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  deleteButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  deleteButtonText: { color: "white", fontSize: 18, fontWeight: "bold" },
-  emptyContainer: {
+  container: {
     flex: 1,
+    paddingHorizontal: "5%",
+    paddingVertical: 20,
     justifyContent: "center",
-    alignItems: "center",
-    marginTop: 50,
+    backgroundColor: "#f2f2f2",
   },
-  emptyText: { fontSize: 18, color: "#888" },
 });

@@ -3,23 +3,40 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
   Keyboard,
+  ActivityIndicator,
 } from "react-native";
 import { MoodContext } from "../context/MoodContext";
+import CustomButton from "../components/CustomButton";
+import { validateMood } from "../utils/moodService";
+
+const MAX_LENGTH = 30;
 
 export default function AddMoodScreen({ navigation }) {
   const { addMood } = useContext(MoodContext);
   const [newMood, setNewMood] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleAddMood = async () => {
-    if (newMood.trim().length > 0) {
-      await addMood(newMood);
-      Keyboard.dismiss();
+    const validationError = validateMood(newMood);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await addMood(newMood.trim());
       navigation.goBack();
+    } catch (err) {
+      setError("Something went wrong. Please try again");
+    } finally {
+      setIsLoading(false);
+      Keyboard.dismiss();
     }
   };
 
@@ -28,15 +45,39 @@ export default function AddMoodScreen({ navigation }) {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.container}>
           <Text style={styles.title}>What's your mood?</Text>
+
           <TextInput
             style={styles.input}
             placeholder="Enter your mood (e.g., Happy)"
             value={newMood}
-            onChangeText={setNewMood}
+            onChangeText={(text) => {
+              setNewMood(text);
+              setError("");
+            }}
+            maxLength={MAX_LENGTH}
           />
-          <TouchableOpacity style={styles.button} onPress={handleAddMood}>
-            <Text style={styles.buttonText}>Add Mood</Text>
-          </TouchableOpacity>
+
+          <View style={styles.metaRow}>
+            <Text
+              style={[
+                styles.counter,
+                newMood.trim().length > MAX_LENGTH && { color: "red" },
+              ]}
+            >
+              {newMood.trim().length} / {MAX_LENGTH}
+            </Text>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          </View>
+
+          {isLoading ? (
+            <ActivityIndicator
+              size="large"
+              color="#4CAF50"
+              style={{ marginTop: 20 }}
+            />
+          ) : (
+            <CustomButton title="Add Mood" onPress={handleAddMood} />
+          )}
         </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
@@ -44,22 +85,31 @@ export default function AddMoodScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: "center" },
-  title: { fontSize: 24, textAlign: "center", marginBottom: 20 },
+  container: {
+    flex: 1,
+    paddingHorizontal: "5%",
+    paddingVertical: 20,
+    justifyContent: "center",
+  },
+  title: {
+    fontSize: 24,
+    textAlign: "center",
+    marginBottom: 20,
+  },
   input: {
     borderWidth: 1,
     borderColor: "#aaa",
     padding: 10,
     borderRadius: 8,
-    marginBottom: 20,
+    marginBottom: 8,
     backgroundColor: "white",
   },
-  button: {
-    backgroundColor: "#4CAF50",
-    padding: 15,
-    borderRadius: 8,
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 20,
+    marginBottom: 10,
   },
-  buttonText: { color: "white", fontSize: 18, fontWeight: "bold" },
+  counter: { fontSize: 13, color: "#555" },
+  errorText: { color: "red", fontSize: 13, fontStyle: "italic" },
 });
