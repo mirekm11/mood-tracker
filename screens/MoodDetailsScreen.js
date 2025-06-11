@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   Text,
@@ -10,33 +10,25 @@ import {
 } from "react-native";
 import { MoodContext } from "../context/MoodContext";
 import CustomButton from "../components/CustomButton";
+import { validateComment } from "../utils/validation";
 
 const MAX_LENGTH = 150;
 
 export default function MoodDetailsScreen({ route, navigation }) {
-  const { moodList, addComment } = useContext(MoodContext);
+  const { addComment } = useContext(MoodContext);
+  const { moodItem } = route.params ?? {};
 
-  const { id = null } = route.params ?? {};
+  if (!moodItem?.id) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Invalid mood data. Returning...</Text>
+      </View>
+    );
+  }
 
-  const moodEntry = moodList.find((mood) => mood.id === id);
-
-  const [comment, setComment] = useState(moodEntry?.comment || "");
+  const [comment, setComment] = useState(moodItem.comment || "");
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    if (!moodEntry) {
-      setTimeout(() => navigation.goBack(), 1500);
-    }
-  }, [moodEntry, navigation]);
-
-  const validateComment = (text) => {
-    const trimmed = text.trim();
-    if (!trimmed) return "Comment cannot be empty";
-    if (trimmed.length < 5) return "Comment is too short";
-    if (trimmed.length > MAX_LENGTH) return `Maximum ${MAX_LENGTH} characters`;
-    return "";
-  };
 
   const handleSave = () => {
     const validationError = validateComment(comment);
@@ -45,26 +37,18 @@ export default function MoodDetailsScreen({ route, navigation }) {
       return;
     }
 
-    addComment(id, comment.trim());
+    addComment(moodItem.id, comment.trim());
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
     navigation.goBack();
     Keyboard.dismiss();
   };
 
-  if (!moodEntry) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Mood not found. Returning...</Text>
-      </View>
-    );
-  }
-
   return (
     <KeyboardAvoidingView behavior="height" style={{ flex: 1 }}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.container}>
-          <Text style={styles.title}>{moodEntry.mood}</Text>
+          <Text style={styles.title}>{moodItem.mood}</Text>
 
           <TextInput
             style={styles.input}
@@ -107,7 +91,11 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     justifyContent: "center",
   },
-  title: { fontSize: 24, textAlign: "center", marginBottom: 20 },
+  title: {
+    fontSize: 24,
+    textAlign: "center",
+    marginBottom: 20,
+  },
   input: {
     borderWidth: 1,
     borderColor: "#aaa",

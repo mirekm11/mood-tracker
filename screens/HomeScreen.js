@@ -8,7 +8,6 @@ import {
   Keyboard,
   ActivityIndicator,
   RefreshControl,
-  Alert,
 } from "react-native";
 import { MoodContext } from "../context/MoodContext";
 import * as Speech from "expo-speech";
@@ -21,40 +20,25 @@ export default function HomeScreen({ navigation }) {
     useContext(MoodContext);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleNavigate = (id, mood, comment) => {
-    if (!id || !mood) return;
-    navigation.navigate("Mood Details", {
-      id,
-      mood,
-      comment: comment ?? "",
-    });
+  const handleNavigate = (item) => {
+    navigation.navigate("Mood Details", { moodItem: item });
   };
 
   const handleSpeak = (comment) => {
-    try {
-      if (comment?.trim()) {
+    if (comment?.trim()) {
+      try {
         Speech.speak(comment);
-      } else {
-        Speech.speak("No comment available.");
+      } catch (error) {
+        console.error("Speech error:", error);
       }
-    } catch (error) {
-      Alert.alert("Speech error: Failed to read the comment");
-      console.error("Speech error:", error);
+    } else {
+      Speech.speak("No comment available.");
     }
   };
 
   const handleDelete = (id) => {
     deleteMood(id);
   };
-
-  const renderMoodItem = ({ item }) => (
-    <MoodItem
-      item={item}
-      onPress={() => handleNavigate(item.id, item.mood, item.comment)}
-      onSpeak={() => handleSpeak(item.comment)}
-      onDelete={() => handleDelete(item.id)}
-    />
-  );
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -81,7 +65,14 @@ export default function HomeScreen({ navigation }) {
             <FlatList
               data={moodList}
               keyExtractor={(item) => item.id}
-              renderItem={renderMoodItem}
+              renderItem={({ item }) => (
+                <MoodItem
+                  item={item}
+                  onNavigate={handleNavigate}
+                  onSpeak={handleSpeak}
+                  onDelete={handleDelete}
+                />
+              )}
               ListEmptyComponent={
                 <EmptyState message="No moods yet. Add some!" />
               }

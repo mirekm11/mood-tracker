@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { MoodContext } from "../context/MoodContext";
 import CustomButton from "../components/CustomButton";
-import { validateMood } from "../utils/moodService";
+import { validateMood } from "../utils/validation";
 
 const MAX_LENGTH = 30;
 
@@ -31,6 +31,7 @@ export default function AddMoodScreen({ navigation }) {
     try {
       setIsLoading(true);
       await addMood(newMood.trim());
+      await new Promise((resolve) => setTimeout(resolve, 300));
       navigation.goBack();
     } catch (err) {
       setError("Something went wrong. Please try again");

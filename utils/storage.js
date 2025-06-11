@@ -17,6 +17,6 @@ export const saveToStorage = async (key, value) => {
   try {
     await AsyncStorage.setItem(key, JSON.stringify(value));
   } catch (error) {
-    console.error(`Error loading from AsyncStorage for key: ${key}`, error);
+    console.error(`Error saving to AsyncStorage for key: ${key}`, error);
   }
 };

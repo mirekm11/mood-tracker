@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from "react";
-import { loadFromStorage, saveToStorage } from "../utils/storage";
-import { createMoodEntry } from "../utils/moodService";
+import { saveToStorage, loadFromStorage } from "../utils/storage";
+import { createMoodEntry } from "../services/moodService";
 import { removeMoodById, updateMoodComment } from "../utils/moodListUtils";
 
 export const MoodContext = createContext();
@@ -14,7 +14,7 @@ export const MoodProvider = ({ children }) => {
   const loadMoods = async () => {
     try {
       setIsLoading(true);
-      const loaded = await loadFromStorage("moodList");
+      const loaded = await loadFromStorage("moodList", []);
       setMoodList(loaded);
     } catch (error) {
       console.error("Error loading moods:", error);
@@ -31,11 +31,9 @@ export const MoodProvider = ({ children }) => {
 
   useEffect(() => {
     if (isInitialLoad) return;
-
     const timeout = setTimeout(() => {
       saveToStorage("moodList", moodList);
     }, 500);
-
     return () => clearTimeout(timeout);
   }, [moodList]);
 
@@ -68,7 +66,7 @@ export const MoodProvider = ({ children }) => {
 
   const addComment = (id, comment) => {
     try {
-      setMoodList((prevMoods) => updateMoodComment(prevMoods, id, comment));
+      setMoodList((prev) => updateMoodComment(prev, id, comment));
     } catch (error) {
       console.error("Error adding comment:", error);
     }

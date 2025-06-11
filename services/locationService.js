@@ -9,14 +9,13 @@ export const getLocationName = async () => {
     }
 
     const location = await Location.getCurrentPositionAsync({});
-
     const places = await Location.reverseGeocodeAsync(location.coords);
 
     if (places.length > 0) {
       const place = places[0];
-
       return `${place.city || "Unknown"}, ${place.country || ""}`;
     }
+
     return null;
   } catch (error) {
     console.error("Error fetching location", error);
