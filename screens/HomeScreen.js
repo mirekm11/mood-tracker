@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useCallback } from "react";
 import {
   View,
   FlatList,
@@ -20,31 +20,50 @@ export default function HomeScreen({ navigation }) {
     useContext(MoodContext);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleNavigate = (item) => {
-    navigation.navigate("Mood Details", { moodItem: item });
-  };
+  const handleNavigate = useCallback(
+    (id) => {
+      navigation.navigate("Mood Details", { id });
+    },
+    [navigation]
+  );
 
-  const handleSpeak = (comment) => {
-    if (comment?.trim()) {
-      try {
+  const handleSpeak = useCallback((comment) => {
+    try {
+      if (comment?.trim()) {
         Speech.speak(comment);
-      } catch (error) {
-        console.error("Speech error:", error);
+      } else {
+        Speech.speak("No comment available.");
       }
-    } else {
-      Speech.speak("No comment available.");
+    } catch (error) {
+      console.error("Speech error:", error);
+      alert("Speech is not supported on this device.");
     }
-  };
+  }, []);
 
-  const handleDelete = (id) => {
-    deleteMood(id);
-  };
+  const handleDelete = useCallback(
+    (id) => {
+      deleteMood(id);
+    },
+    [deleteMood]
+  );
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     await loadMoods();
     setIsRefreshing(false);
-  };
+  }, [loadMoods]);
+
+  const renderItem = useCallback(
+    ({ item }) => (
+      <MoodItem
+        item={item}
+        onNavigate={() => handleNavigate(item.id)}
+        onSpeak={handleSpeak}
+        onDelete={handleDelete}
+      />
+    ),
+    [handleNavigate, handleSpeak, handleDelete]
+  );
 
   return (
     <KeyboardAvoidingView behavior="height" style={{ flex: 1 }}>
@@ -55,7 +74,7 @@ export default function HomeScreen({ navigation }) {
             onPress={() => navigation.navigate("Add Mood")}
           />
 
-          {isLoading ? (
+          {isLoading && !isRefreshing ? (
             <ActivityIndicator
               size="large"
               color="#4CAF50"
@@ -65,14 +84,7 @@ export default function HomeScreen({ navigation }) {
             <FlatList
               data={moodList}
               keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <MoodItem
-                  item={item}
-                  onNavigate={handleNavigate}
-                  onSpeak={handleSpeak}
-                  onDelete={handleDelete}
-                />
-              )}
+              renderItem={renderItem}
               ListEmptyComponent={
                 <EmptyState message="No moods yet. Add some!" />
               }

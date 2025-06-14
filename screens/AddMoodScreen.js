@@ -12,6 +12,7 @@ import {
 import { MoodContext } from "../context/MoodContext";
 import CustomButton from "../components/CustomButton";
 import { validateMood } from "../utils/validation";
+import { getLocationName } from "../services/locationService";
 
 const MAX_LENGTH = 30;
 
@@ -22,7 +23,7 @@ export default function AddMoodScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleAddMood = async () => {
-    const validationError = validateMood(newMood);
+    const validationError = validateMood(newMood.trim());
     if (validationError) {
       setError(validationError);
       return;
@@ -30,11 +31,13 @@ export default function AddMoodScreen({ navigation }) {
 
     try {
       setIsLoading(true);
-      await addMood(newMood.trim());
+      const locationName = await getLocationName();
+      await addMood(newMood.trim(), locationName);
       await new Promise((resolve) => setTimeout(resolve, 300));
       navigation.goBack();
     } catch (err) {
       setError("Something went wrong. Please try again");
+      console.error(err);
     } finally {
       setIsLoading(false);
       Keyboard.dismiss();

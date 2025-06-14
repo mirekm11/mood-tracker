@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect } from "react";
 import { saveToStorage, loadFromStorage } from "../utils/storage";
-import { createMoodEntry } from "../services/moodService";
 import { removeMoodById, updateMoodComment } from "../utils/moodListUtils";
+import { createMoodObject } from "../services/moodFactory";
 
 export const MoodContext = createContext();
 
@@ -37,14 +37,12 @@ export const MoodProvider = ({ children }) => {
     return () => clearTimeout(timeout);
   }, [moodList]);
 
-  const addMood = async (moodText) => {
+  const addMood = async (moodText, locationName) => {
     if (isProcessing) return;
     setIsProcessing(true);
     try {
-      const newMood = await createMoodEntry(moodText);
-      if (newMood) {
-        setMoodList((prev) => [...prev, newMood]);
-      }
+      const newMood = createMoodObject(moodText, locationName);
+      setMoodList((prev) => [...prev, newMood]);
     } catch (error) {
       console.error("Error adding mood:", error);
     } finally {

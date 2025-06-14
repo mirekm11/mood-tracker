@@ -5,7 +5,7 @@ import { FontAwesome } from "@expo/vector-icons";
 export default function MoodItem({ item, onNavigate, onSpeak, onDelete }) {
   return (
     <View style={styles.wrapper}>
-      <TouchableOpacity style={styles.item} onPress={() => onNavigate(item)}>
+      <TouchableOpacity style={styles.item} onPress={() => onNavigate(item.id)}>
         <Text style={styles.moodText} numberOfLines={1} ellipsizeMode="tail">
           {item.mood}
         </Text>

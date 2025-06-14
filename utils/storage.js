@@ -4,7 +4,11 @@ export const loadFromStorage = async (key, fallback = []) => {
   try {
     const data = await AsyncStorage.getItem(key);
     if (data) {
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
     }
     return fallback;
   } catch (error) {

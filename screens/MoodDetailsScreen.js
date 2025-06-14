@@ -15,13 +15,15 @@ import { validateComment } from "../utils/validation";
 const MAX_LENGTH = 150;
 
 export default function MoodDetailsScreen({ route, navigation }) {
-  const { addComment } = useContext(MoodContext);
-  const { moodItem } = route.params ?? {};
+  const { id } = route.params ?? {};
+  const { moodList, addComment } = useContext(MoodContext);
 
-  if (!moodItem?.id) {
+  const moodItem = moodList.find((m) => m.id === id);
+
+  if (!moodItem) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>Invalid mood data. Returning...</Text>
+        <Text style={styles.errorText}>Mood not found. Returning...</Text>
       </View>
     );
   }
@@ -31,7 +33,7 @@ export default function MoodDetailsScreen({ route, navigation }) {
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
-    const validationError = validateComment(comment);
+    const validationError = validateComment(comment.trim());
     if (validationError) {
       setError(validationError);
       return;
